@@ -6,7 +6,11 @@ output: html_document
 ---
 
 ```{r setup}
-data = read.csv2('Data.csv',header=T)
+library(pacman)
+p_load(metafor)
+library(lmerTest)
+
+data = read.csv('Data.csv',header=T,sep=";")
 ```
 
 # Building on the shoulders of giants: meta-analysis
@@ -15,9 +19,133 @@ data = read.csv2('Data.csv',header=T)
 
 1. What is the current evidence for distinctive patterns of pitch mean and pitch sd in schizophrenia? Report how many papers report quantitative estimates, your method to analyze them, the estimated effect size of the difference (mean effect size and standard error for pitch mean, same for pitch sd) and forest plots representing it. 
 
+```{r estimate effect sizes of mean}
+#getting effect size of mean for each study
+data_1=escalc('SMD', n1i=SampleSizeSchizo, n2i=SampleSizeContros, m1i=PitchMeanSchizo, m2i=PitchMeanControls, sd1i=PitchMeanSchizoSD, sd2i=PitchMeanControlsSD, data = data)
+
+#renaem these 2 new columns
+data_1 = plyr::rename(data_1, replace=c("yi"="yi_mean","vi"="vi_mean"))
+```
+
+```{r estimate effect sizes of sd}
+data_1=escalc('SMD', n1i=SampleSizeSchizo, n2i=SampleSizeContros, m1i=PitchSDSchizo, m2i=PitchSDControls, sd1i=PitchSDSchizoSD, sd2i=PitchSDControlsSD, data = data_1)
+
+#rename
+data_1 = plyr::rename(data_1, replace=c("yi"="yi_sd","vi"="vi_sd"))
+```
+
+```{r estimate the overall effect}
+#first for mean
+m_mean <- lmer(yi_mean ~ 1 + (1 |Article) , weights = 1/vi_mean, data=data_1, control=lmerControl(check.nobs.vs.nlev="ignore", check.nobs.vs.nRE="ignore"))
+summary(m_mean)
+
+#and SD
+m_sd <- lmer(yi_sd ~ 1 + (1 |Article) , weights = 1/vi_sd, data=data_1, control=lmerControl(check.nobs.vs.nlev="ignore", check.nobs.vs.nRE="ignore"))
+summary(m_sd)
+
+#now redo this using rma (more fancy stats)
+rma_mean = rma(yi=yi_mean, vi=vi_mean, data=data_1,slab=Article)
+rma_mean
+
+rma_sd = rma(yi=yi_sd,vi=vi_sd, data=data_1,slab=Article)
+rma_sd
+```
+
+```{r forest plot}
+forest(rma_mean,main="Effect of mean")
+
+
+forest(rma_sd,main="Effect of standard deviation")
+```
+
+
 2. Do the results match your own analysis from Assignment 3? If you add your results to the meta-analysis, do the estimated effect sizes change? Report the new estimates and the new forest plots.
 
+```{r get data out of schizo}
+library(dplyr)
+
+#import dataset from schizo folder
+schizo=read.csv("schizo_data.csv")
+
+#summarize by diagnosis - mean+sd and sd+sd
+meta_data=schizo %>% group_by(Diagnosis) %>% summarise(mean_mean=mean(mean),mean_sd=sd(mean),sd_mean=mean(sd),sd_sd=sd(sd))
+
+#get number of participants
+con_sum = length(unique(schizo$ID[schizo$Diagnosis == "Schizophrenia"]))
+s_sum = length(unique(schizo$ID[schizo$Diagnosis == "Control"]))
+
+ass3 = data.frame(
+  Article = "CogSci et.al.",
+  Year= 2017,
+  SampleSizeSchizo =s_sum,
+  SampleSizeContros = con_sum,
+  PitchMeanSchizo = meta_data$mean_mean[2],
+  PitchMeanControls = meta_data$mean_mean[1],
+  PitchMeanSchizoSD = meta_data$mean_sd[2],
+  PitchMeanControlsSD = meta_data$mean_sd[1],
+  PitchSDSchizo = meta_data$sd_mean[2],
+  PitchSDControls = meta_data$sd_mean[1],
+  PitchSDSchizoSD = meta_data$sd_sd[2],
+  PitchSDControlsSD = meta_data$sd_sd[1]
+  )
+
+```
+
+
+```{r add study to big df}
+#get Cohen's d for our study
+#mean
+ass3=escalc('SMD', n1i=SampleSizeSchizo, n2i=SampleSizeContros, m1i=PitchMeanSchizo, m2i=PitchMeanControls, sd1i=PitchMeanSchizoSD, sd2i=PitchMeanControlsSD, data = ass3)
+
+#renaem these 2 new columns
+ass3 = plyr::rename(ass3, replace=c("yi"="yi_mean","vi"="vi_mean"))
+
+#sd
+ass3=escalc('SMD', n1i=SampleSizeSchizo, n2i=SampleSizeContros, m1i=PitchSDSchizo, m2i=PitchSDControls, sd1i=PitchSDSchizoSD, sd2i=PitchSDControlsSD, data = ass3)
+
+#rename
+ass3 = plyr::rename(ass3, replace=c("yi"="yi_sd","vi"="vi_sd"))
+
+#put to the rest of the data
+data_all = rbind(data_1,ass3)
+```
+
+```{r and make models again}
+#first for mean
+m_mean_2 <- lmer(yi_mean ~ 1 + (1 |Article) , weights = 1/vi_mean, data=data_all, control=lmerControl(check.nobs.vs.nlev="ignore", check.nobs.vs.nRE="ignore"))
+summary(m_mean_2)
+
+#and SD
+m_sd_2 <- lmer(yi_sd ~ 1 + (1 |Article) , weights = 1/vi_sd, data=data_all, control=lmerControl(check.nobs.vs.nlev="ignore", check.nobs.vs.nRE="ignore"))
+summary(m_sd_2)
+
+#now redo this using rma
+rma_mean_2 = rma(yi=yi_mean, vi=vi_mean, data=data_all,slab=Article)
+rma_mean_2
+
+rma_sd_2 = rma(yi=yi_sd,vi=vi_sd, data=data_all,slab=Article)
+rma_sd_2
+
+#and now plots
+forest(rma_mean_2,main="Effect of mean")
+forest(rma_sd_2,main="Effect of standard deviation")
+
+```
+
+
 3. Assess the quality of the literature: report and comment on heterogeneity of the studies (tau, I2), on publication bias (funnel plot), and on influential studies.
+
+```{r influence of studies}
+#for mean
+inf_mean = influence(rma_mean_2)
+print(inf_mean)
+plot(inf_mean)
+
+inf_sd = influence(rma_sd)
+print(inf_sd)
+plot(inf_sd)
+```
+
 
 ## Tips on the process to follow:
 
