@@ -36,7 +36,7 @@ data_1 = plyr::rename(data_1, replace=c("yi"="yi_sd","vi"="vi_sd"))
 
 ```{r estimate the overall effect}
 #first for mean
-m_mean <- lmer(yi_mean ~ 1 + (1 |Article) , weights = 1/vi_mean, data=data_1, control=lmerControl(check.nobs.vs.nlev="ignore", check.nobs.vs.nRE="ignore"))
+m_mean <- lmer(yi_mean ~ 1 + (1 |Article) , weights = 1/vi_mean, data=data_1, control=lmerControl(check.nobs.vs.nlev="ignore", check.nobs.vs.nRE="ignore",calc.derivs = FALSE))
 summary(m_mean)
 
 #and SD
@@ -51,7 +51,7 @@ rma_sd = rma(yi=yi_sd,vi=vi_sd, data=data_1,slab=Article)
 rma_sd
 ```
 
-```{r forest plot}
+```{r forest plots 1}
 forest(rma_mean,main="Effect of mean")
 
 
@@ -126,7 +126,7 @@ rma_mean_2
 rma_sd_2 = rma(yi=yi_sd,vi=vi_sd, data=data_all,slab=Article)
 rma_sd_2
 
-#and now plots
+2#and now plots
 forest(rma_mean_2,main="Effect of mean")
 forest(rma_sd_2,main="Effect of standard deviation")
 
@@ -134,6 +134,15 @@ forest(rma_sd_2,main="Effect of standard deviation")
 
 
 3. Assess the quality of the literature: report and comment on heterogeneity of the studies (tau, I2), on publication bias (funnel plot), and on influential studies.
+
+```{r heterogenity}
+
+```
+
+```{r publication bias}
+
+```
+
 
 ```{r influence of studies}
 #for mean
