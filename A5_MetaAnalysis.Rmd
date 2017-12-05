@@ -136,17 +136,21 @@ forest(rma_sd_2,main="Effect of standard deviation")
 3. Assess the quality of the literature: report and comment on heterogeneity of the studies (tau, I2), on publication bias (funnel plot), and on influential studies.
 
 ```{r heterogenity}
-rma_mean_2 #tau^2=0,021 (CIs:-0.034 0.0762) I^2=26,15% -report Q because of p-value
+rma_mean_2 #tau^2=0,021  I^2=26,15% -could report Q because of p-value
+#get also confidence intervals for I2
+confint(rma_mean_2,0.95)
+
 rma_sd_2 #tau^2=3.499 (CIs:1.4317 5.5673)  I^2=98,18%
+confint(rma_sd_2,0.95)
 ```
 
 ```{r publication bias}
-funnel(rma_mean_2, main = "Random-Effects Model",xlab = "Standardized Mean Difference")
-regtest(rma_mean_2) #not significant
-ranktest(rma_mean_2) #not significant =>no evidence for publication bias
+funnel(rma_mean_2, main = "Random-Effects Models of Effect of Mean",xlab = "Standardized Mean Difference")
+regtest(rma_mean_2,digits= 3) #not significant
+ranktest(rma_mean_2,digits= 3) #not significant =>no evidence for publication bias
 
-funnel(rma_sd_2, main = "Random-Effects Model",xlab = "Standardized Mean Difference") #this looks super bad
-regtest(rma_sd_2) #significant
+funnel(rma_sd_2, main = "Random-Effects Models of Effect of SD",xlab = "Standardized Mean Difference") #this looks super bad
+regtest(rma_sd_2,digits=3) #significant
 ranktest(rma_sd_2)
 ```
 
@@ -169,6 +173,22 @@ data_2[10,13:14]=NA
 
 #remove Cohen 2014 for sd - can delete whole row (it has NAs for mean)
 data_2 = data_2[-9,]
+```
+
+```{r again without influential studies}
+#first mean
+rma_mean_3 = rma(yi=yi_mean, vi=vi_mean, data=data_2,slab=Article)
+rma_mean_3
+
+
+forest(rma_mean_3,main="Effect of mean")
+
+
+#now sd
+rma_sd_3 = rma(yi=yi_sd,vi=vi_sd, data=data_all,slab=Article)
+rma_sd_3
+
+forest(rma_sd_3,main="Effect of standard deviation")
 ```
 
 
