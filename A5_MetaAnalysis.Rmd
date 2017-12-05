@@ -71,8 +71,8 @@ schizo=read.csv("schizo_data.csv")
 meta_data=schizo %>% group_by(Diagnosis) %>% summarise(mean_mean=mean(mean),mean_sd=sd(mean),sd_mean=mean(sd),sd_sd=sd(sd))
 
 #get number of participants
-con_sum = length(unique(schizo$ID[schizo$Diagnosis == "Schizophrenia"]))
-s_sum = length(unique(schizo$ID[schizo$Diagnosis == "Control"]))
+s_sum = length(unique(schizo$ID[schizo$Diagnosis == "Schizophrenia"]))
+con_sum = length(unique(schizo$ID[schizo$Diagnosis == "Control"]))
 
 ass3 = data.frame(
   Article = "CogSci et.al.",
@@ -136,11 +136,18 @@ forest(rma_sd_2,main="Effect of standard deviation")
 3. Assess the quality of the literature: report and comment on heterogeneity of the studies (tau, I2), on publication bias (funnel plot), and on influential studies.
 
 ```{r heterogenity}
-
+rma_mean_2 #tau^2=0,021 (CIs:-0.034 0.0762) I^2=26,15% -report Q because of p-value
+rma_sd_2 #tau^2=3.499 (CIs:1.4317 5.5673)  I^2=98,18%
 ```
 
 ```{r publication bias}
+funnel(rma_mean_2, main = "Random-Effects Model",xlab = "Standardized Mean Difference")
+regtest(rma_mean_2) #not significant
+ranktest(rma_mean_2) #not significant =>no evidence for publication bias
 
+funnel(rma_sd_2, main = "Random-Effects Model",xlab = "Standardized Mean Difference") #this looks super bad
+regtest(rma_sd_2) #significant
+ranktest(rma_sd_2)
 ```
 
 
@@ -148,12 +155,23 @@ forest(rma_sd_2,main="Effect of standard deviation")
 #for mean
 inf_mean = influence(rma_mean_2)
 print(inf_mean)
-plot(inf_mean)
+plot(inf_mean) 
 
-inf_sd = influence(rma_sd)
+inf_sd = influence(rma_sd_2)
 print(inf_sd)
-plot(inf_sd)
+plot(inf_sd) 
+
+#new data for new meta-analysis
+data_2 = data_all
+
+#remove Martinez for mean but not sd
+data_2[10,13:14]=NA
+
+#remove Cohen 2014 for sd - can delete whole row (it has NAs for mean)
+data_2 = data_2[-9,]
 ```
+
+
 
 
 ## Tips on the process to follow:
