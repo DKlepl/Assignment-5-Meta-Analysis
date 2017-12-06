@@ -9,6 +9,7 @@ output: html_document
 library(pacman)
 p_load(metafor)
 library(lmerTest)
+library(magrittr)
 
 data = read.csv('Data.csv',header=T,sep=";")
 ```
@@ -25,6 +26,9 @@ data_1=escalc('SMD', n1i=SampleSizeSchizo, n2i=SampleSizeContros, m1i=PitchMeanS
 
 #renaem these 2 new columns
 data_1 = plyr::rename(data_1, replace=c("yi"="yi_mean","vi"="vi_mean"))
+
+#get number of participants included in mean analysis
+data_1 %>% filter(is.na(yi_mean)==F) %>%summarise(Schizo=sum(SampleSizeSchizo),Controls=sum(SampleSizeContros))
 ```
 
 ```{r estimate effect sizes of sd}
@@ -32,6 +36,9 @@ data_1=escalc('SMD', n1i=SampleSizeSchizo, n2i=SampleSizeContros, m1i=PitchSDSch
 
 #rename
 data_1 = plyr::rename(data_1, replace=c("yi"="yi_sd","vi"="vi_sd"))
+
+#get number of participants
+data_1 %>% filter(is.na(yi_sd)==F) %>%summarise(Schizo=sum(SampleSizeSchizo),Controls=sum(SampleSizeContros))
 ```
 
 ```{r estimate the overall effect}
@@ -108,6 +115,10 @@ ass3 = plyr::rename(ass3, replace=c("yi"="yi_sd","vi"="vi_sd"))
 
 #put to the rest of the data
 data_all = rbind(data_1,ass3)
+
+#get new number of participants
+data_all %>% filter(is.na(yi_mean)==F) %>%summarise(Schizo=sum(SampleSizeSchizo),Controls=sum(SampleSizeContros))
+data_all %>% filter(is.na(yi_sd)==F) %>%summarise(Schizo=sum(SampleSizeSchizo),Controls=sum(SampleSizeContros))
 ```
 
 ```{r and make models again}
